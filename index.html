@@ -1,0 +1,432 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+   <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+   <link rel="icon" href="..\shared\favicon.ico" />
+
+   <title>Logic Helper</title>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+   <link rel="stylesheet" href="../shared/hamburgermenu.css" />
+   <script type="text/javascript" src="../shared/hamburgermenu.js"></script>
+   <script type="text/javascript" src="hintsreader.js"></script>
+   <script type="text/javascript" src="solvelogic.js"></script>
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1T547128ND"></script>
+
+   <script>
+      async function copyTextToClipboard(text) {
+         try {
+            await navigator.clipboard.writeText(text);
+            console.log('Text copied to clipboard');
+         } catch (err) {
+            console.error('Failed to copy text: ', err);
+         }
+      }
+
+      function getAllWords() {
+         var wordsDict = {};
+         for (let j = 1; j <= 9; j++) {
+            for (let i = 0; i <= 9; i++) {
+               const inputField = document.querySelector(`[id="cat${j}-${i}"]`);
+               if (inputField && inputField.value.length > 0) {
+                  wordsDict[`cat${j}-${i}`] = inputField.value.toLowerCase().trim();
+               }
+            }
+         }
+         return wordsDict;
+      }
+
+      function clearAll() {
+         for (let j = 1; j <= 9; j++) {
+            for (let i = 0; i <= 9; i++) {
+               const inputField = document.querySelector(`[id="cat${j}-${i}"]`);
+               if (inputField && inputField.value.length > 0) {
+                  inputField.value = "";
+               }
+            }
+         }
+      }
+
+      function getFirstNumericValue() {
+         for (let i = 1; i <= 5; i++) {
+            const inputField = document.querySelector(`[id="cat${i}-0"]`);
+            if (inputField) {
+               const value = inputField.value.trim();
+               // Check if the value is a pure numeric value
+               if (!isNaN(value) && value !== '') {
+                  return "Cat" + i.toString(); // Return the first numeric value
+               }
+            }
+         }
+         return "Cat1"; // Return first if no numeric value is found
+      }
+
+
+
+      function OnInterpret() {
+         trackEvent("interpret");
+         const hints = getHints();
+         const numCat = getFirstNumericValue();
+         var interpretationlines = [];
+         const hintlines = hints.split('\n');
+         const wordsdict = getAllWords();
+         const words = Object.entries(wordsdict).map(([key, value]) => (value));
+         var response;
+         if (words.length > 6) {
+            hintlines.forEach((line) => {
+               const interpretationline = TestInterpretationString(line, words, numCat);
+               interpretationlines.push(interpretationline);
+            });
+            response = interpretationlines.join("\n");
+         } else {
+            response = "Not enough words have been found, please define the grid";
+         }
+         setInterpretations(response);
+         document.getElementById('txtOutput').value = "";
+      }
+
+      function onPaste() {
+         trackEvent("paste");
+         OnPasteX(event.target.id);
+      }
+      function OnPasteX(butid) {
+         const lastChar = butid.charAt(butid.length - 1); // Get the last character
+         const nrCat = parseInt(lastChar, 10) + 1;
+         var userInput = prompt('Paste your text here for Category ' + nrCat.toString() + ':');
+         if (userInput) {
+            setCategories(nrCat, userInput);
+         }
+      }
+
+      function setCategories(nrCat, userInput) {
+         const number_of_items = parseInt(document.getElementById('items').value);
+         const startIdx = (nrCat - 1) * number_of_items;
+         userInput = userInput.replace("\r", "");
+         const lines = userInput.split(/[\n,]+/);
+         lines.forEach((line, index) => {
+            const curCat = Math.floor((startIdx + index) / number_of_items) + 1;
+            const curIdx = (startIdx + index) % number_of_items;
+            const querystring = `[id="cat${curCat}-${curIdx}"]`;
+            const textbox = document.querySelector(querystring);
+            if (textbox) {
+               textbox.value = line;
+            }
+         });
+      }
+
+
+      function OnLoadSample(sampleNr) {
+         trackEvent("loadsample", sampleNr);
+         let catnr;
+         let itemnr;
+         let categories;
+         let hints;
+         switch (sampleNr) {
+            case 1:
+               catnr = 4;
+               itemnr = 7;
+               categories = "250\n275\n300\n325\n350\n375\n400\n" +
+                  "morse\ncaesar\n\nascii\nplayfair\nvanity\nvigenere\nbifid\n" +
+                  "2003\n2004\n2005\n2006\n2007\n2008\n2009\n" +
+                  "kcl\nr&mrowe\ndittocat\nblack jeep\nfrappgirl\nfloridajim\ndbricks";
+               hints = "Of the Bifid assignment and the 350 page assignment, either one was published in 2006 and the other is assigned to FrappGirl.\nThe Vigenere project wasn't published in 2004.\nThe playfair assignment was published in 2008.\nDittocat’s project is either the Caesar project or the 275 page project.\nThe 275 page project was published in 2004.\nThe Vanity project is 125 pages longer than the morse assignment.\nDittocat’s project was published in 2006.\nOf the bifid assignment and the vanity project, either one is assigned to KCL Adventures and the other was published in 2007.\nThe book published in 2003, R&MRowe’s assignment, Black Jeep project, the book published in 2005 and the 275 page assignment are all different projects.\nFloridaJim’s assignment is  longer than the book published in 2003.\nThe 400 page project wasn't published in 2007.\nThe playfair project is  longer than the book published in 2003.\nKCL Adventures project is 50 pages longer than Black Jeep’s project.\nBlack Jeep’s assignment is either the Playfair assignment or the 375 page assignment.";
+               break;
+            case 2:
+               catnr = 6;
+               itemnr = 6;
+               categories ="Arthur\n Beth\n Charlie\n Danielle\n Ethan\n Francesca\n Brinton Brook\n Choate\n Graff\n Haas\n Pinecliff\n Pruyn\n 10\n 11\n 12\n 13\n 14\n 15\n cardinal\n goldfinch\n heron\n owl\n sparrow\n warbler\n ammo can\n decon box\n film canister\n lock and lock\n parmesan container\n peanut butter jar\n bouncy ball\n eraser\n finger puppet\n keychain\n necklace\n yoyo\n";
+               hints = "The hiker who saw a heron started three hours later than the hiker who left a finger puppet.\n The hiker who saw an owl started an hour after the hiker who found a peanut butter jar.\n The hiker that spotted a cardinal started three hours earlier than the hiker who found an ammo can.\n The hiker who found the parmesan container started two hours earlier than the hiker who found a film canister.\n A necklace was left in the decon box.\n Beth started hiking two hours earlier than the Choate hiker.\n The hiker who saw the sparrow started an hour before Charlie.\n The hiker who left the yoyo started three hours after the hiker who found the parmesan container.\n The hiker who left the bouncy ball started two hours later than the Haas hiker.\n Arthur started three hours later than the Pinecliff hiker.\n The hiker who found the lock and lock started an hour earlier than the hiker who left the bouncy ball.\n Ethan didn't start hiking at 12\n The hiker who left an eraser and the hiker who left a yoyo started two hours apart.\n The 10 AM hiker has left a keychain.\n The Graff hiker has started an hour after the Pruyn hiker.\n The hiker who spotted the goldfinch has set out from the trailhead at 13\n The hiker who saw the sparrow started after the person who found the decon box.\n At Choate, the hiker has started at 13\n The hiker who left the finger puppet started hiking an hour earlier than Danielle.\n \n";
+               break;
+         }
+         document.getElementById('categories').value = catnr;
+         document.getElementById('items').value = itemnr;
+         OnUpdateX();
+         setCategories(1,categories);
+         setHints(hints);
+         OnInterpret();
+         OnProcess();
+      }
+
+      function OnClear() {
+         trackEvent("clear");
+         clearAll();
+      }
+
+      function OnUpdate() {
+         trackEvent("update");
+         OnUpdateX();
+         OnPasteX("Paste0");
+      }
+      function OnUpdateX() {
+         const categories = parseInt(document.getElementById('categories').value, 10);
+         const items = parseInt(document.getElementById('items').value, 10);
+         const words = getAllWords(); // Get existing data
+         const tableContainer = document.getElementById('tableContainer');
+         tableContainer.innerHTML = ''; // Clear previous table
+
+         // Create table
+         const table = document.createElement('table');
+         const headerRow = document.createElement('tr');
+
+         // Create header cells
+         for (let i = 0; i < categories; i++) {
+            const th = document.createElement('th');
+            th.textContent = `Category ${i + 1}  `;
+            headerRow.appendChild(th);
+            const pb = document.createElement('input');   //         <input value="Paste" type="button" id="PasteButtonx" onclick="OnPaste(x)">
+            pb.type = 'button';
+            pb.value = "Paste";
+            pb.id = `PasteButton${i}`;
+            pb.onclick = function () { onPaste(); };
+            th.appendChild(pb);
+         }
+
+         table.appendChild(headerRow);
+
+         // Create rows with textboxes
+         for (let i = 0; i < items; i++) {
+            const row = document.createElement('tr');
+
+            for (let j = 0; j < categories; j++) {
+               const cell = document.createElement('td');
+               const textbox = document.createElement('input');
+               textbox.id = 'cat' + (j + 1).toString() + '-' + i.toString();
+               textbox.type = 'text';
+               textbox.style.width = '100%';
+               textbox.tabIndex = i + (j+1) * (items);
+
+               textbox.value = (textbox.id in words) ? words[textbox.id] : "";
+               cell.appendChild(textbox);
+               row.appendChild(cell);
+            }
+
+            table.appendChild(row);
+         }
+
+         tableContainer.appendChild(table);
+         setInterpretations("");
+         document.getElementById('txtOutput').value = "";
+
+      }
+
+      function getContainerInput(xcontainer) {
+         const table = document.getElementById(xcontainer);
+         if (!table) return []; // Return empty if the table doesn't exist
+
+         let data = "";
+         const rows = table.querySelectorAll("tr"); // Get all table rows
+
+         rows.forEach(row => {
+            data += row.firstElementChild.firstElementChild.value + "\n";
+         });
+
+         return data;
+      }
+      
+      function setContainerInput(userInput, xcontainer, prefix) {
+         xcontainer.innerHTML = ''; // Clear previous table
+
+         let s = parseInt(userInput);
+         if (s > 0 && userInput.length < 3) {
+            userInput = 'clue\n'.repeat(s);
+         } 
+
+         let values = userInput.split("\n");
+                  
+         for (let n = 0; n < values.length; n++) {
+            if (values[n].trim().length > 0) {
+               const row = document.createElement('tr');
+               const cell = document.createElement('td');
+               const textbox = document.createElement('input');
+               textbox.id = prefix + (n + 1).toString();
+               textbox.type = 'text';
+               textbox.style.width = '100%';
+
+               textbox.value = values[n];
+               cell.appendChild(textbox);
+               row.appendChild(cell);
+               xcontainer.appendChild(row);
+            }
+         }
+      }
+      function getInterpretations() {
+         return (getContainerInput('interpretationsContainer'));
+      }
+
+      function getHints() {
+         return (getContainerInput('hintsContainer'));
+      }
+      function setInterpretations(userInput) {
+         const interpretationscontainer = document.getElementById('interpretationsContainer');
+         setContainerInput(userInput, interpretationscontainer, "interpretations");
+      }
+
+      function setHints(userInput) {
+         const hintscontainer = document.getElementById('hintsContainer');
+         setContainerInput(userInput, hintsContainer,"hints");
+      }
+      function setInterpretations(userInput) {
+         const interpretationscontainer = document.getElementById('interpretationsContainer');
+         setContainerInput(userInput, interpretationscontainer,"interpretations");
+      }
+
+      async function onCopyWords() {
+         copyTextToClipboard(Object.values(getAllWords()).join("\n"));
+      }
+
+      async function onCopyHints() {
+         copyTextToClipboard(getHints());
+      }
+      async function onCopyInterpretations() {
+         copyTextToClipboard(getInterpretations());
+      }
+
+      function onPasteHints() {
+         var userInput = prompt('Please enter your hint');
+         if (userInput) {
+            setHints(userInput);
+         }
+      }
+
+      function onPasteInterpretations() {
+         var userInput = prompt('Please enter your interpretations');
+         if (userInput) {
+            setInterpretations(userInput);
+         }
+      }
+
+
+      function OnProcess() {
+         trackEvent("process");
+         const number_of_cats = parseInt(document.getElementById('categories').value);
+         const number_of_items = parseInt(document.getElementById('items').value);
+         var txtInterpretation = getInterpretations();
+         var cbChecked = document.getElementById('cbTrace').checked;
+         const wordsdict = getAllWords();
+         const words = Object.entries(wordsdict).map(([key, value]) => (value));
+         var response="";
+         if (words.length > 6) {
+            try {
+               response = ProcessInterpretation(txtInterpretation, words, number_of_cats, number_of_items, cbChecked);
+            } catch (error) {
+               response = error;
+            }
+         } else
+            response = "Not enough words have been found, please define the grid";
+         document.getElementById('txtOutput').value = response;
+      }
+      function page_init() {
+         HamburgerMenu_Init();
+      }
+   </script>
+
+</head>
+<body onload="page_init()">
+   <div id="OuterFrame" style="text-align: left; width: 100%; height: 574px;">
+      <!-- Top Navigation Menu -->
+      <div class="topnav">
+         <div style="border: 1px solid black; text-align: left; background-color: blue; color: white; width: 100%; height: 24px;" id="FrameHeader">
+            <big>Logic Helper</big>
+         </div>
+         <!-- Navigation links (hidden by default) -->
+         <div id="myLinks">
+         </div>
+         <!-- "Hamburger menu" / "Bar icon" to toggle the navigation links -->
+         <a href="javascript:void(0);" class="icon" onclick="HamburgerMenu_Open()">
+            <i class="fa fa-bars"></i>
+         </a>
+
+      </div>
+      <form name="InputForm">
+         <label for="categories">Number of Categories:</label>
+         <select id="categories">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+         </select>
+
+         <label for="items">Number of Items:</label>
+         <select id="items">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+         </select>
+
+         <input value="Update" type="button" id="updateButton" onclick="OnUpdate()">
+         <input value="Clear" type="button" id="updateClear" onclick="OnClear()">
+         <input value="Copy" type="button" id="CopyVariables" onclick="onCopyWords()">
+         <input style="float: right" value="Sample 2" type="button" id="sampleButton" onclick="OnLoadSample(2)">
+         <input style="float: right" value="Sample 1" type="button" id="sampleButton" onclick="OnLoadSample(1)">
+         <div style="display: flex; overflow-y: auto;">
+            <div style="width:70%; overflow-y: auto;">
+               <div id="tableContainer"></div>
+
+
+            </div>
+            <div style="width: 30%; overflow-y: auto;">
+               <b>Samples:</b><br />
+               <i>either([350,bifid],[2006,frappgirl]);</i><br />
+               Each element on left side is matched to an element on the right side<br />
+               <i>equal(playfair,[2008]); </i><br />
+               The element on the left side matches all elements on the right side<br />
+               <i>not(vigenere,[2004]);</i><br />
+               The element on the left side does not match all elements on the right side<br />
+               <i>delta(playfair,2003,0,>,Cat1);</i><br />
+               Based on column Cat1, the first is greater, smaller or equal to the other element by 0<br />
+               <i>distinct([275,2003,2005,r&mrowe,black jeep]);</i> <br />
+               None of these items are in the same row or column<br />
+            </div>
+         </div>
+         <hr>
+         <div id="maincontainer" style="display: Flex; gap: 10px;">
+            <div style='width: 50%; max-width: 50%' ;>
+               <table style='width: 100%; max-width: 100%;'>
+                  <thead>
+                     <tr>
+                        <td>
+                           Hints <input value="Paste" type="button" id="PasteHints" onclick="onPasteHints()">
+                           <input value="Copy" type="button" id="CopyHints" onclick="onCopyHints()">
+
+                        </td>
+                     </tr>
+                  </thead>
+                  <tbody id="hintsContainer">
+                  </tbody>
+               </table>
+            </div>
+            <div style='width: 50%; max-width: 50%;' ;>
+               <table style='width: 100%; max-width: 100%;'>
+                  <thead>
+                     <tr>
+                        <td>
+                           Interpretation <input value="Paste" type="button" id="PasteInterpretation" onclick="onPasteInterpretations()">
+                           <input value="Copy" type="button" id="CopyInterpretations" onclick="onCopyInterpretations()">
+                        </td>
+                     </tr>
+                  </thead>
+                  <tbody id="interpretationsContainer">
+                  </tbody>
+               </table>
+            </div>
+         </div>
+         <hr />
+         <input value="Interpret" type="button" id="InterpretButton" onclick="OnInterpret()">
+         <input value="Process" type="button" id="ProcessButton" onclick="OnProcess()">
+         <input type="checkbox" id="cbTrace"><label for="cbTrace">Trace</label><br />
+      </form>
+      <form name="OutputForm">
+         <hr>
+         Output:<br>
+<textarea id="txtOutput" readonly rows=5 style='width: 90%; max-width: 90%;'></textarea>
+      </form>
+   </div>
+   <!-- outer frame -->
+</body>
+</html>
